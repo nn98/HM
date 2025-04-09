@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>실시간 화폐 변환기</title>
+    <style>
+        body { font-family: Arial, sans-serif; line-height: 1.6; margin: 20px; }
+        input { margin: 10px 0; }
+        #result { margin-top: 20px; }
+        .currency-group { margin: 10px 0; }
+    </style>
+</head>
+<body>
+    <h1>실시간 화폐 변환기</h1>
+    <input type="number" id="amount" placeholder="금액을 입력하세요">
+    <div class="currency-group">
+        <input type="radio" name="currency" id="KRW" value="KRW"> <label for="KRW">원(KRW)</label>
+        <input type="radio" name="currency" id="USD" value="USD"> <label for="USD">달러(USD)</label>
+        <input type="radio" name="currency" id="VND" value="VND"> <label for="VND">동(VND)</label>
+    </div>
+    <div id="result"></div>
+
+    <script>
+        const exchangeRates = {
+            KRW: { USD: 0.00075, VND: 18.22 },
+            USD: { KRW: 1331.40, VND: 24262.50 },
+            VND: { KRW: 0.055, USD: 0.000041 }
+        };
+
+        const currencyNames = {
+            KRW: '원',
+            USD: '달러',
+            VND: '동'
+        };
+
+        function detectCurrency(amount) {
+    const amountStr = amount.toString();
+    if (amountStr.length <= 3) return 'USD';
+    if (amountStr.length >= 4 && amountStr.slice(-3) === '000') return 'VND';
+    return 'KRW';
+}
+
+
+        function formatVND(value) {
+            return new Intl.NumberFormat('vi-VN', {
+                style: 'currency',
+                currency: 'VND'
+            }).format(value).replace('₫', '').trim() + ' 동';
+        }
+
+        function convertCurrency(userSelected = false) {
+            const amount = parseFloat(document.getElementById('amount').value);
+            const resultDiv = document.getElementById('result');
+            
+            if (isNaN(amount) || amount <= 0) {
+                resultDiv.innerHTML = '';
+                return;
+            }
+
+            let sourceCurrency;
+            if (userSelected) {
+                sourceCurrency = document.querySelector('input[name="currency"]:checked').value;
+            } else {
+                sourceCurrency = detectCurrency(amount);
+                document.getElementById(sourceCurrency).checked = true;
+            }
+
+            resultDiv.innerHTML = `<h2>${amount.toLocaleString()} ${currencyNames[sourceCurrency]} 의 환산 결과:</h2>`;
+
+            for (const targetCurrency in exchangeRates[sourceCurrency]) {
+                if (targetCurrency !== sourceCurrency) {
+                    const convertedAmount = amount * exchangeRates[sourceCurrency][targetCurrency];
+                    const formattedAmount = targetCurrency === 'VND' ? formatVND(convertedAmount) : convertedAmount.toLocaleString() + ' ' + currencyNames[targetCurrency];
+                    resultDiv.innerHTML += `<p>${formattedAmount}</p>`;
+                }
+            }
+        }
+
+        document.getElementById('amount').addEventListener('input', () => convertCurrency(false));
+
+        document.querySelectorAll('input[name="currency"]').forEach(radio => {
+            radio.addEventListener('change', () => convertCurrency(true));
+        });
+    </script>
+</body>
+</html>
